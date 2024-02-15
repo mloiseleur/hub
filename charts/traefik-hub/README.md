@@ -1,3 +1,5 @@
+# Traefik Hub Helm Chart
+
 <a name="readme-top"></a>
 
 <br/>
@@ -42,7 +44,7 @@ kubectl create secret generic hub-agent-token --from-literal=token=XXXX
 helm upgrade --install traefik-hub traefik/traefik-hub
 ```
 
-You can customize the installation with a `values` file.  
+You can customize the installation with a `values` file.
 Find the complete documentation on all parameters in the [default value file](./traefik-hub/values.yaml).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

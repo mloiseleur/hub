@@ -1,4 +1,4 @@
-<br/>
+# Traefik Hub
 
 <div align="center" style="margin: 30px;">
 <a href="https://hub.traefik.io/">
@@ -48,7 +48,7 @@ To test Traefik Hub with a local Kubernetes, see [this tutorial](./tutorials/0-p
 
 ## 📒 Repository Structure
 
-```
+```shell
 .
 ├── api-server                        # API server source code
 ├── apps                              # Yaml to deploy all apps

@@ -5,6 +5,13 @@ GREEN=`tput setaf 2`
 RESET=`tput sgr0`
 YELLOW=`tput setaf 3`
 
+
+markdown-lint:
+	# https://github.com/markdownlint/markdownlint/blob/master/docs/RULES.md
+	# https://github.com/markdownlint/markdownlint/blob/master/lib/mdl/rules.rb
+	HOME=/workdir mdl -s markdown.rb .
+
+
 # Used for Helm Chart
 IMAGE_HELM_UNITTEST=docker.io/helmunittest/helm-unittest:3.13.3-0.4.1
 IMAGE_CHART_TESTING=quay.io/helmpack/chart-testing:v3.10.1
