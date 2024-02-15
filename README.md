@@ -33,6 +33,19 @@ This repository host Traefik Hub public source code:
 
 GH actions ensure the code source on this repository works with current stable version of Traefik Hub.
 
+## ⬇️ Install
+
+### Prerequisites
+
+1. [kubectl](https://kubernetes.io/docs/tasks/tools/) command-line tool installed and configured to access the cluster
+2. [gh](https://cli.github.com/) command-line tool installed and configured with your account
+3. [Flux CD](https://fluxcd.io/flux/cmd/) command-line tool installed.
+4. A Kubernetes cluster running.
+
+All tutorials in this demo are tested using [kind](https://kind.sigs.k8s.io).
+
+To test Traefik Hub with a local Kubernetes, see [this tutorial](./tutorials/0-prerequisites/README.md).
+
 ## 📒 Repository Structure
 
 ```
