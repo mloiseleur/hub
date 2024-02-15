@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+resources:
+  - pv.yaml
+  - config.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+
+configMapGenerator:
+  - behavior: create
+    files:
+      - grafana-dashboards/hub/api-management.json
+      - grafana-dashboards/hub/api.json
+      - grafana-dashboards/hub/hub-dashboard.json
+      - grafana-dashboards/hub/users.json
+    name: grafana-hub-dashboards
+    namespace: monitoring
+  - behavior: create
+    files:
+      - grafana-dashboards/flux/control-plane.json
+    name: grafana-flux-dashboards
+    namespace: monitoring

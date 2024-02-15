@@ -1,0 +1,284 @@
+suite: deployment tests
+release:
+  name: traefik-hub
+  namespace: traefik
+templates:
+- deployment.yaml
+tests:
+  - it: should render a deployment
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: metadata.name
+          value: traefik-hub
+  - it: should set the image
+    set:
+      image: test
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: test
+  - it: should set the serviceAccountName
+    set:
+      serviceAccountName: test
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: test
+  - it: should set the namespace
+    release:
+      namespace: test
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: test
+  - it: should not set resources by default
+    release:
+      namespace: test
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].resources
+  - it: should set resources when specified
+    release:
+      namespace: test
+    set:
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 100m
+        limits:
+          memory: 256Mi
+          cpu: 200m
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources
+          value:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+            limits:
+              memory: 256Mi
+              cpu: 200m
+  - it: should provide needed args by default
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers[0].args
+          count: 15
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: ic
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content:
+            --hub.token=$(HUB_TOKEN)
+  - it: should provide needed env by default
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers[0].env
+          count: 3
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HUB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                key: token
+                name: hub-agent-token
+  - it: should add arguments
+    release:
+      namespace: test
+    set:
+      additionalArguments:
+        - --test
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --test
+  - it: should add env variables
+    release:
+      namespace: test
+    set:
+      additionalEnvVars:
+        - name: TEST
+          value: "test"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TEST
+            value: "test"
+  - it: should add priorityClassName
+    set:
+      priorityClassName: system-cluster-critical
+    asserts:
+      - equal:
+          path: spec.template.spec.priorityClassName
+          value: system-cluster-critical
+  - it: should not set priorityClassName by default
+    asserts:
+      - equal:
+          path: spec.template.spec.priorityClassName
+          value: null
+  - it: should not mount plugins volume by default
+    set:
+      image: test
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers[0].volumeMounts
+          count: 2
+  - it: should mount plugins volume and add extra args when plugins are used
+    set:
+      image: test
+      plugins:
+        - name: crowdsec-bouncer-traefik-plugin
+          moduleName: github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
+          version: v1.1.15
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers[0].volumeMounts
+          count: 3
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content:
+            --experimental.plugins.crowdsec-bouncer-traefik-plugin.modulename=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content:
+            --experimental.plugins.crowdsec-bouncer-traefik-plugin.version=v1.1.15
+  - it: should have no imagePullSecrets
+    asserts:
+      - isNull:
+          path: spec.template.spec.imagePullSecrets
+  - it: should set imagePullSecrets correctly
+    set:
+      imagePullSecrets:
+        - name: regcred
+    asserts:
+      - equal:
+          path: spec.template.spec.imagePullSecrets[0].name
+          value: regcred
+  - it: should set providers settings
+    set:
+      ingressClass:
+        enabled: true
+      providers:
+        kubernetesCRD:
+          endpoint: "local.tld"
+          token: "xxx"
+          certAuthFilePath: "/var/crds.pem"
+          namespaces: "ns1,ns2"
+          labelSelector: "foo=bar"
+          throttleDuration: "10s"
+        kubernetesIngress:
+          endpoint: "local2.tld"
+          token: "yyy"
+          certAuthFilePath: "/var/ings.pem"
+          namespaces: "ns3,ns4"
+          labelSelector: "bar=foo"
+          ingressEndpoint:
+            hostname: "ing.tld"
+            ip: "1.2.3.4"
+            publishedService: "ns/svc"
+          throttleDuration: "10h"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetescrd.endpoint="local.tld"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetescrd.token="xxx"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetescrd.certauthfilepath="/var/crds.pem"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetescrd.namespaces="ns1,ns2"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetescrd.labelselector="foo=bar"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetescrd.ingressclass="traefik-hub"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetescrd.throttleduration="10s"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetesingress.endpoint="local2.tld"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetesingress.token="yyy"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetesingress.certauthfilepath="/var/ings.pem"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetesingress.namespaces="ns3,ns4"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetesingress.labelselector="bar=foo"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetesingress.ingressclass="traefik-hub"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetesingress.ingressendpoint.hostname="ing.tld"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetesingress.ingressendpoint.ip="1.2.3.4"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetesingress.ingressendpoint.publishedservice="ns/svc"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetesingress.throttleduration="10h"
+  - it: should set custom out-chart ingressClass
+    set:
+      ingressClass:
+        enabled: false
+      providers:
+        kubernetesCRD:
+          ingressClass: foo
+        kubernetesIngress:
+          ingressClass: bar
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetescrd.ingressclass="foo"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetesingress.ingressclass="bar"
+  - it: should set custom name inchart ingressClass on both providers
+    set:
+      ingressClass:
+        enabled: true
+        name: mying
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetescrd.ingressclass="mying"
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --providers.kubernetesingress.ingressclass="mying"
+  - it: should add and mount an extraVolume when set
+    set:
+      extraVolumes:
+        - name: certificates
+          secret:
+            secretNames: certificates
+      extraVolumeMounts:
+        - name: certificates
+          mountPath: /etc/traefik-hub/certs
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: certificates
+            secret:
+              secretNames: certificates
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: certificates
+            mountPath: /etc/traefik-hub/certs

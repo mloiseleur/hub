@@ -1,0 +1,146 @@
+suite: service tests
+release:
+  name: traefik-hub
+  namespace: traefik
+templates:
+  - service.yaml
+tests:
+  - it: should render a service without any values
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+      - equal:
+          path: metadata.name
+          value: "traefik-hub"
+      - equal:
+          path: metadata.annotations
+          value: null
+      - contains:
+          path: spec.ports
+          content:
+            name: web
+            port: 80
+            targetPort: web
+      - contains:
+          path: spec.ports
+          content:
+            name: websecure
+            port: 443
+            targetPort: websecure
+  - it: should set the namespace
+    release:
+      namespace: test
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: test
+  - it: should set service annotations and extraLabels
+    set:
+      service:
+        annotations:
+          key: value
+          key2: value2
+        extraLabels:
+          foo: bar
+    asserts:
+      - equal:
+          path: metadata.annotations
+          value:
+            key: value
+            key2: value2
+      - isSubset:
+          path: metadata.labels
+          content:
+            foo: bar
+  - it: should set custom nodePort
+    set:
+      service:
+        ports:
+          - name: web
+            port: 80
+            targetPort: web
+            nodePort: 30000
+          - name: websecure
+            port: 443
+            targetPort: websecure
+            nodePort: 30001
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            name: web
+            port: 80
+            targetPort: web
+            nodePort: 30000
+      - contains:
+          path: spec.ports
+          content:
+            name: websecure
+            port: 443
+            targetPort: websecure
+            nodePort: 30001
+  - it: should render all spec parameters
+    set:
+      service:
+        type: LoadBalancer
+        externalTrafficPolicy: Local
+        internalTrafficPolicy: Cluster
+        loadBalancerClass: service.k8s.aws/nlb
+        loadBalancerIP: 1.2.3.4
+        clusterIP: 4.3.2.1
+        externalIPs: [ "1.1.1.1", "2.2.2.2" ]
+        loadBalancerSourceRanges: [ "3.3.3.3", "4.4.4.4" ]
+        allocateLoadBalancerNodePorts: false
+        ipFamilyPolicy: PreferDualStack
+        ipFamilies: [ "IPv6" ]
+    asserts:
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+      - equal:
+          path: spec.externalTrafficPolicy
+          value: Local
+      - equal:
+          path: spec.internalTrafficPolicy
+          value: Cluster
+      - equal:
+          path: spec.loadBalancerClass
+          value: service.k8s.aws/nlb
+      - equal:
+          path: spec.loadBalancerIP
+          value: 1.2.3.4
+      - equal:
+          path: spec.clusterIP
+          value: 4.3.2.1
+      - equal:
+          path: spec.externalIPs
+          value: [ "1.1.1.1", "2.2.2.2" ]
+      - equal:
+          path: spec.loadBalancerSourceRanges
+          value: [ "3.3.3.3", "4.4.4.4" ]
+      - equal:
+          path: spec.allocateLoadBalancerNodePorts
+          value: false
+      - equal:
+          path: spec.ipFamilyPolicy
+          value: PreferDualStack
+      - equal:
+          path: spec.ipFamilies
+          value: [ "IPv6" ]
+  - it: should fail with invalid values on ipFamilyPolicy
+    set:
+      service:
+        ipFamilyPolicy: InvalidValue
+    asserts:
+      - failedTemplate:
+          errorMessage: "ERROR: Allowed values on service.ipFamilyPolicy are [SingleStack PreferDualStack RequireDualStack]"
+  - it: should fail with invalid values on ipFamilies
+    set:
+      service:
+        ipFamilies: [ "IPv4", "IPv5" ]
+    asserts:
+      - failedTemplate:
+          errorMessage: "ERROR: Allowed values on service.ipFamilies are [IPv4 IPv6]"

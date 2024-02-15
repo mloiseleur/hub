@@ -1,0 +1,107 @@
+## Can be used to set number of Traefik Hub instances
+## When using HPA, keep it empty in order to avoid conflicts
+## between this value and HPA.
+replicas:
+maxSurge: 1
+
+## On production system, you may want to set it to "system-cluster-critical"
+priorityClassName: ""
+
+imagePullSecrets: []
+image: ghcr.io/traefik/traefik-hub:{{ .Chart.AppVersion }}
+serviceAccountName:
+
+resources: {}
+#  requests:
+#    memory: 64Mi
+#    cpu: 250m
+#  limits:
+#    memory: 128Mi
+#    cpu: 500m
+
+## configure your hubToken with --set hubTokenSecretName=mySecret
+## kubectl create secret generic mySecret --namespace traefik --from-literal=token=xxx
+hubTokenSecretName: "hub-agent-token"
+
+additionalArguments: []
+additionalEnvVars: []
+additionalLabels: {}
+
+## extra Volume to add on Deployment.
+## See https://kubernetes.io/docs/concepts/storage/volumes/
+extraVolumes: []
+extraVolumeMounts: []
+
+## Service used in front of Traefik Hub
+## See https://kubernetes.io/docs/reference/kubernetes-api/service-resources/service-v1/
+service:
+  type: LoadBalancer
+  annotations: {}
+  externalTrafficPolicy:
+  internalTrafficPolicy:
+  extraLabels: {}
+  loadBalancerClass:
+  loadBalancerIP:
+  clusterIP:
+  externalIPs: []
+  loadBalancerSourceRanges: []
+  allocateLoadBalancerNodePorts:
+  ## Valid values: SingleStack, PreferDualStack, RequireDualStack
+  ipFamilyPolicy:
+  ## Valid values: IPv4, IPv6
+  ipFamilies: []
+
+  ## Can be customized with, for instance, specific nodePort
+  ports:
+    - port: 80
+      name: web
+      targetPort: web
+    - port: 443
+      name: websecure
+      targetPort: websecure
+
+## Optional HPA on Traefik Hub. Created when required `maxReplicas` is set.
+## See https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+autoscaling:
+  minReplicas:
+  maxReplicas:
+  metrics:
+  behavior:
+
+## use it to load plugins
+plugins: []
+# - name: crowdsec-bouncer-traefik-plugin
+#   moduleName: github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
+#   version: v1.1.15
+
+## Create an IngressClass and use it on both k8s providers.
+ingressClass:
+  enabled: false
+  name:
+
+## Customize Traefik Providers
+##  - https://doc.traefik.io/traefik/providers/kubernetes-crd
+##  - https://doc.traefik.io/traefik/providers/kubernetes-ingress
+## On Traefik Hub, `allowCrossNamespace`, `allowEmptyServices`
+## and `allowExternalNameServices` are set to true.
+providers:
+  kubernetesCRD:
+    endpoint:
+    token:
+    certAuthFilePath:
+    namespaces:
+    labelSelector:
+    ingressClass:
+    throttleDuration:
+  kubernetesIngress:
+    endpoint:
+    token:
+    certAuthFilePath:
+    namespaces:
+    labelSelector:
+    ingressClass:
+    ingressEndpoint:
+      hostname:
+      ip:
+      publishedService:
+    throttleDuration:

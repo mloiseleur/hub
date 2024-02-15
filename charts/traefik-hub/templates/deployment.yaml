@@ -1,0 +1,243 @@
+{{- $additionnalArgs := .Values.additionalArguments }}
+{{- range $key, $value := .Values.plugins }}
+  {{ $additionnalArgs = append $additionnalArgs (printf "--experimental.plugins.%s.modulename=%s" $value.name $value.moduleName) }}
+  {{ $additionnalArgs = append $additionnalArgs (printf "--experimental.plugins.%s.version=%s" $value.name $value.version) }}
+{{- end }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "traefik-hub.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{- include "traefik-hub.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.replicas }}
+  replicas: {{ . }}
+  {{- end }}
+  selector:
+    matchLabels:
+     {{- include "traefik-hub.labelselector" . | nindent 6 }}
+  strategy:
+    rollingUpdate:
+      maxSurge: {{ .Values.maxSurge }}
+      maxUnavailable: 0
+    type: RollingUpdate
+  minReadySeconds: 0
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "9100"
+      labels:
+      {{- include "traefik-hub.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "traefik-hub.serviceaccount-name" . }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: name
+                      operator: In
+                      values:
+                        - traefik
+                topologyKey: "kubernetes.io/hostname"
+      topologySpreadConstraints:
+        - maxSkew: 2
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: "ScheduleAnyway"
+          labelSelector:
+            matchLabels:
+            {{- include "traefik-hub.labelselector" . | nindent 14 }}
+      terminationGracePeriodSeconds: 30
+      hostNetwork: false
+      priorityClassName: {{ .Values.priorityClassName }}
+      automountServiceAccountToken: true
+      containers:
+        - image: {{ tpl .Values.image $ }}
+          imagePullPolicy: IfNotPresent
+          name: traefik
+          args:
+            - ic
+            - --entrypoints.metrics.address=:9100
+            - --entrypoints.traefik.address=:9000
+            - --entrypoints.web.address=:8000
+            - --entrypoints.websecure.address=:8443
+            - --entrypoints.websecure.http.tls=true
+            - --hub.admission.listenAddr=:7500
+            - --hub.token=$(HUB_TOKEN)
+            - --metrics.prometheus.entryPoint=metrics
+            - --ping.entrypoint=traefik
+            - --providers.kubernetescrd.allowCrossNamespace=true
+            - --providers.kubernetescrd.allowEmptyServices=true
+            - --providers.kubernetescrd.allowExternalNameServices=true
+            - --providers.kubernetesingress.allowEmptyServices=true
+            - --providers.kubernetesingress.allowExternalNameServices=true
+            {{- with .Values.providers }}
+            {{- with .kubernetesCRD.endpoint }}
+            - --providers.kubernetescrd.endpoint="{{ . }}"
+            {{- end }}
+            {{- with .kubernetesCRD.token }}
+            - --providers.kubernetescrd.token="{{ . }}"
+            {{- end }}
+            {{- with .kubernetesCRD.certAuthFilePath }}
+            - --providers.kubernetescrd.certauthfilepath="{{ . }}"
+            {{- end }}
+            {{- with .kubernetesCRD.namespaces }}
+            - --providers.kubernetescrd.namespaces="{{ . }}"
+            {{- end }}
+            {{- with .kubernetesCRD.labelSelector }}
+            - --providers.kubernetescrd.labelselector="{{ . }}"
+            {{- end }}
+            {{- if (or .kubernetesCRD.ingressClass $.Values.ingressClass.enabled) }}
+            - --providers.kubernetescrd.ingressclass="{{ .kubernetesCRD.ingressClass | default (include "traefik-hub.ic-name" $) }}"
+            {{- end }}
+            {{- with .kubernetesCRD.throttleDuration }}
+            - --providers.kubernetescrd.throttleduration="{{ . }}"
+            {{- end }}
+            {{- with .kubernetesIngress.endpoint }}
+            - --providers.kubernetesingress.endpoint="{{ . }}"
+            {{- end }}
+            {{- with .kubernetesIngress.token }}
+            - --providers.kubernetesingress.token="{{ . }}"
+            {{- end }}
+            {{- with .kubernetesIngress.certAuthFilePath }}
+            - --providers.kubernetesingress.certauthfilepath="{{ . }}"
+            {{- end }}
+            {{- with .kubernetesIngress.namespaces }}
+            - --providers.kubernetesingress.namespaces="{{ . }}"
+            {{- end }}
+            {{- with .kubernetesIngress.labelSelector }}
+            - --providers.kubernetesingress.labelselector="{{ . }}"
+            {{- end }}
+            {{- if (or .kubernetesIngress.ingressClass $.Values.ingressClass.enabled) }}
+            - --providers.kubernetesingress.ingressclass="{{ .kubernetesIngress.ingressClass | default (include "traefik-hub.ic-name" $) }}"
+            {{- end }}
+            {{- with .kubernetesIngress.ingressEndpoint.hostname }}
+            - --providers.kubernetesingress.ingressendpoint.hostname="{{ . }}"
+            {{- end }}
+            {{- with .kubernetesIngress.ingressEndpoint.ip }}
+            - --providers.kubernetesingress.ingressendpoint.ip="{{ . }}"
+            {{- end }}
+            {{- with .kubernetesIngress.ingressEndpoint.publishedService }}
+            - --providers.kubernetesingress.ingressendpoint.publishedservice="{{ . }}"
+            {{- end }}
+            {{- with .kubernetesIngress.throttleDuration }}
+            - --providers.kubernetesingress.throttleduration="{{ . }}"
+            {{- end }}
+            {{- end }}
+            {{- with $additionnalArgs }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- with .requests }}
+            requests:
+              memory: {{ .memory }}
+              cpu: {{ .cpu }}
+            {{- end }}
+            {{- with .limits }}
+            limits:
+              memory: {{ .memory }}
+              cpu: {{ .cpu }}
+            {{- end }}
+          {{- end }}
+          env:
+            - name: HUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.hubTokenSecretName }}
+                  key: token
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            {{- with .Values.additionalEnvVars }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 9000
+              scheme: HTTP
+            failureThreshold: 1
+            initialDelaySeconds: 2
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 9000
+              scheme: HTTP
+            failureThreshold: 3
+            initialDelaySeconds: 2
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 2
+          ports:
+            - name: "admission"
+              containerPort: 7500
+              protocol: "TCP"
+            - name: "web"
+              containerPort: 8000
+              protocol: "TCP"
+            - name: "websecure"
+              containerPort: 8443
+              protocol: "TCP"
+            - name: "traefik"
+              containerPort: 9000
+              protocol: "TCP"
+            - name: "metrics"
+              containerPort: 9100
+              protocol: "TCP"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 65532
+            runAsNonRoot: true
+            runAsUser: 65532
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/traefik
+            - name: tmp
+              mountPath: /tmp
+            {{- if ne (len .Values.plugins) 0 }}
+            - name: plugins
+              mountPath: /plugins-storage
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      securityContext:
+        fsGroup: 65532
+      volumes:
+        - name: data
+          emptyDir: { }
+        - name: tmp
+          emptyDir: { }
+        {{- if ne (len .Values.plugins) 0 }}
+        - name: plugins
+          emptyDir: { }
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
