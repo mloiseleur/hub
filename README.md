@@ -37,13 +37,13 @@ GH actions ensure the code source on this repository works with current stable v
 
 ```
 .
-├── api-server                                           # API server source code
-├── apps                                                 # Yaml to deploy all apps
+├── api-server                        # API server source code
+├── apps                              # Yaml to deploy all apps
 ├── charts
-│   └── traefik-hub                                      # Chart source code
+│   └── traefik-hub                   # Chart source code
 ├── demo
-│   ├── gitops                                           # GitOps demo, with FluxCD specifics
-│   └── observability                                    # Observability demo, used in GitOps demo
+│   ├── gitops                        # GitOps demo, with FluxCD specifics
+│   └── observability                 # Observability demo, used in GitOps demo
 ├── LICENSE
 ├── Makefile
 ├── README.md
