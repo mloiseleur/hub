@@ -50,8 +50,6 @@ To test Traefik Hub with a local Kubernetes, see [this tutorial](./tutorials/0-p
 
 ```shell
 .
-├── api-server                        # API server source code
-├── apps                              # Yaml to deploy all apps
 ├── charts
 │   └── traefik-hub                   # Chart source code
 ├── demo
@@ -60,6 +58,9 @@ To test Traefik Hub with a local Kubernetes, see [this tutorial](./tutorials/0-p
 ├── LICENSE
 ├── Makefile
 ├── README.md
+├── src
+│   ├── api-server                    # API server source code
+│   └── manifests                     # Yaml to deploy all apps
 └── tutorials
     ├── 0-prerequisites
     ├── 1-getting-started
