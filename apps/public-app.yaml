@@ -3,15 +3,15 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: flight-data
+  name: public-data
   namespace: apps
 data:
   api.json: |
     {
-      "flights": [
-        { "id": 1, "code": "TL123", "src": "JFK", "dest": "CDG" },
-        { "id": 2, "code": "TL234", "src": "CDG", "dest": "JFK" },
-        { "id": 3, "code": "TL345", "src": "CDG", "dest": "LYS" }
+      "public": [
+        { "id": 1, "city": "GopherCity", "weather": "Moderate rain" },
+        { "id": 2, "city": "City of Gophers", "weather": "Sunny" },
+        { "id": 3, "city": "GopherRocks", "weather": "Cloudy" }
       ]
     }
 
@@ -19,49 +19,44 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: flight-app
+  name: public-app
   namespace: apps
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: flight-app
+      app: public-app
   template:
     metadata:
       labels:
-        app: flight-app
+        app: public-app
     spec:
       containers:
         - name: api
           image: ghcr.io/traefik-workshops/api-server:v0.1.0
-          args: ["-data", "/api/api.json", "-openapi", "/public/openapi.yaml", "-errorrate", "2"]
+          args: ["-data", "/api/api.json", "-errorrate", "2"]
           imagePullPolicy: Always
           volumeMounts:
           - name: api-data
             mountPath: /api
-          - name: openapi
-            mountPath: /public
       volumes:
         - name: api-data
           configMap:
-            name: flight-data
-        - name: openapi
-          configMap:
-            name: flight-apispec
+            name: public-data
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: flight-app
+  name: public-app
   namespace: apps
   labels:
-    app: flight-app
+    app: public-app
 spec:
   type: ClusterIP
   ports:
     - port: 3000
       name: api
   selector:
-    app: flight-app
+    app: public-app
 
