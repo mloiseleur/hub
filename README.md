@@ -55,9 +55,6 @@ To test Traefik Hub with a local Kubernetes, see [this tutorial](./tutorials/0-p
 ├── demo
 │   ├── gitops                        # GitOps demo, with FluxCD specifics
 │   └── observability                 # Observability demo, used in GitOps demo
-├── LICENSE
-├── Makefile
-├── README.md
 ├── src
 │   ├── api-server                    # API server source code
 │   └── manifests                     # Yaml to deploy all apps
