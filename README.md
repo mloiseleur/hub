@@ -42,7 +42,7 @@ GH actions ensure the code source on this repository works with current stable v
 3. [Flux CD](https://fluxcd.io/flux/cmd/) command-line tool installed.
 4. A Kubernetes cluster running.
 
-All tutorials are tested using [kind](https://kind.sigs.k8s.io).
+All tutorials are tested using [k3d](https://k3d.io/).
 
 To test Traefik Hub with a local Kubernetes, see [this tutorial](./tutorials/0-prerequisites/README.md).
 
