@@ -30,7 +30,9 @@ ifndef TRAEFIK_HUB_DEPLOYED
 endif
 
 getting-started: install-hub
-	kubectl apply -f tutorials/1-getting-started/manifests
+	kubectl apply -f src/manifests/public-app.yaml
+	kubectl apply -f tutorials/1-getting-started/manifests/public-api.yaml
+	kubectl apply -f tutorials/1-getting-started/manifests/api-gateway.yaml
 
 .PHONY: clean
 
