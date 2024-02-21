@@ -1,0 +1,21 @@
+log:
+  level: debug
+
+additionalArguments:
+  - "--hub.platformUrl=https://platform-preview.hub.traefik.io/agent"
+
+image: europe-west9-docker.pkg.dev/traefiklabs/traefik-hub/traefik-hub:latest
+
+service:
+  type: LoadBalancer
+  # Needed on local Kind k8s cluster.
+  # Can be removed or customized as needed on other k8s cluster.
+  ports:
+    - port: 80
+      name: web
+      targetPort: web
+      nodePort: 30000
+    - port: 443
+      name: websecure
+      targetPort: websecure
+      nodePort: 30001
