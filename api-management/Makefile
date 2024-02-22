@@ -32,9 +32,15 @@ endif
 getting-started: install-hub
 	kubectl apply -f src/manifests/public-app.yaml
 	kubectl apply -f tutorials/1-getting-started/manifests/public-api.yaml
+	kubectl apply -f tutorials/1-getting-started/manifests/api-access.yaml
 	kubectl apply -f tutorials/1-getting-started/manifests/api-gateway.yaml
 
 .PHONY: clean
+
+clean-hub:
+	helm uninstall traefik-hub -n traefik-hub
+	kubectl delete namespace traefik-hub
+	kubectl delete namespace apps
 
 clean:
 	kind delete cluster --name traefik-hub
