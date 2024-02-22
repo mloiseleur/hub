@@ -1,8 +1,8 @@
 # About
 
-This tutorial details how to deploy locally a Kubernetes cluster.
+This tutorial details how to deploy locally a Kubernetes cluster and install Traefik Hub agent.
 
-# Deploy Kubernetes
+## Deploy Kubernetes
 
 In this tutorial, one can use [k3d](https://k3d.io/). Alternatives like [kind](https://kind.sigs.k8s.io), cloud providers, or others can also be used.
 
@@ -62,6 +62,49 @@ kubectl wait --namespace metallb-system --for=condition=ready pod --selector=app
 kubectl apply -f tutorials/0-prerequisites/kind/metallb-config.yaml
 ```
 
+## Install Traefik Hub
+
+Login to the [Traefik Hub UI](https://hub.traefik.io), open the page to [generate a new agent](https://hub.traefik.io/agents/new).
+**Do not install the agent, but copy your token.**
+
+Now, open a terminal and run these commands to create the secret needed for Traefik Hub.
+
+```shell
+export TRAEFIK_HUB_TOKEN=xxx
+kubectl create namespace traefik-hub
+kubectl create secret generic hub-agent-token --namespace traefik-hub --from-literal=token=${TRAEFIK_HUB_TOKEN}
+```
+
+After, you can install Traefik Hub with Helm:
+```shell
+# Add the Helm repository
+helm repo add traefik https://traefik.github.io/charts
+helm repo update
+
+# Install Traefik Hub
+helm upgrade --install --namespace traefik-hub traefik-hub traefik/traefik-hub
+```
+
+## Configure Traefik Hub users
+
+Three users are needed for this tutorial:
+
+* `admin` user in `admin` group for internal use API.
+* `licensed` user in `licensed` group, which can access a private API, requiring a standard subscription.
+* `premium` user in `licensed` and `premium` group, which can access all private APIs, requiring a premium subscription.
+
+
+<details>
+  <summary>Create users in Traefik Hub UI</summary>
+
+Create the `admin` user in the Traefik Hub UI:
+
+![Create user admin](./images/create-user-admin.png)
+
+Do the same for `licensed` and `premium` user.
+
+</details>
+
 # Clean up
 
 Everything is installed in Kubernetes.
@@ -76,3 +119,5 @@ kind delete cluster --name traefik-hub
 # k3d
 k3d delete cluster traefik-hub
 ```
+
+You may also want to delete the users in Traefik Hub UI.
