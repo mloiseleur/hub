@@ -101,7 +101,9 @@ Create the `admin` user in the Traefik Hub UI:
 
 ![Create user admin](./images/create-user-admin.png)
 
-Do the same for `licensed` and `premium` user.
+Do the same for `licensed` and `premium` user:
+
+![Create licensed and premium user](./images/licensed-and-premium.png)
 
 </details>
 
