@@ -8,7 +8,7 @@ metadata:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: private-app
+  name: private-app-data
   namespace: apps
 data:
   api.json: |
@@ -70,3 +70,89 @@ spec:
   selector:
     app: private-app
 
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: private-app-openapispec
+  namespace: apps
+data:
+  openapi.yaml: |
+    openapi: "3.0.0"
+    info:
+      version: 1.0.0
+      title: Forecast Weather
+      description: Forecast Weather API
+      contact:
+        name: TraefikLabs
+        url: 'https://traefik.io/'
+      license:
+        name: Apache 2.0
+        url: 'https://spdx.org/licenses/Apache-2.0.html'
+    tags:
+      - name: external
+        description: routes exposed publicly
+      - name: internal
+        description: routes reserved for internal usage
+    paths:
+      /weather/licensed/forecast:
+        get:
+          summary: Retrieve weather
+          operationId: getForecast
+          tags:
+            - external
+          parameters:
+            - name: city
+              in: query
+              description: City
+              required: true
+              schema:
+                type: string
+          responses:
+            '200':
+              description: An array of forecasted weathers
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/weathers"
+            '204':
+              $ref: '#/components/responses/nocontent'
+            '401':
+              $ref: '#/components/responses/unauthorized'
+            '500':
+              $ref: '#/components/responses/serverError'
+    components:
+      responses:
+        nocontent:
+          description: "No content"
+        unauthorized:
+          description: "Access token is missing or invalid"
+        serverError:
+          description: "Internal server error"
+      schemas:
+        weather:
+          type: object
+          required:
+            - id
+            - name
+          properties:
+            id:
+              type: integer
+              format: int64
+            city:
+              type: string
+            weather:
+              type: string
+            dt:
+              type: string
+        weathers:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/weather"
+      securitySchemes:
+        bearerAuth:
+          description: "Bearer Auth"
+          type: http
+          scheme: bearer
+          bearerFormat: JWT
