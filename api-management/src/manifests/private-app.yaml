@@ -95,7 +95,7 @@ data:
       - name: internal
         description: routes reserved for internal usage
     paths:
-      /weather/licensed/forecast:
+      /forecast:
         get:
           summary: Retrieve weather
           operationId: getForecast
@@ -121,6 +121,32 @@ data:
               $ref: '#/components/responses/unauthorized'
             '500':
               $ref: '#/components/responses/serverError'
+        patch:
+          summary: Update weather data
+          operationId: patchForecast
+          tags:
+            - external
+          parameters:
+            - name: city
+              in: query
+              description: City
+              required: true
+              schema:
+                type: string
+          responses:
+            '200':
+              description: An array of forecasted weathers
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/weathers"
+            '204':
+              $ref: '#/components/responses/nocontent'
+            '401':
+              $ref: '#/components/responses/unauthorized'
+            '500':
+              $ref: '#/components/responses/serverError'
+
     components:
       responses:
         nocontent:
