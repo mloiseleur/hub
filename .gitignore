@@ -9,3 +9,7 @@
 __snapshot__
 **/charts/*.tgz
 Chart.lock
+
+# api-management
+.kube-cluster
+.traefik-hub

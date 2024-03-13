@@ -38,7 +38,7 @@ spec:
       containers:
         - name: api
           image: ghcr.io/traefik-workshops/api-server:v0.1.0
-          args: ["-data", "/api/api.json", "-errorrate", "2"]
+          args: ["-data", "/api/api.json", "-errorrate", "0"]
           imagePullPolicy: Always
           volumeMounts:
           - name: api-data
