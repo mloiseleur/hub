@@ -11,19 +11,12 @@ markdown-lint:
 	# https://github.com/markdownlint/markdownlint/blob/master/lib/mdl/rules.rb
 	HOME=/workdir mdl -s markdown.rb .
 
+create-agent-token:
+	@curl -s -X POST -d '{"name": "test-from-hub-repo", "gatewayEndpoint": ""}' -H "Authorization: Bearer ${TRAEFIK_HUB_API_TOKEN}" https://platform.hub.traefik.io/cluster/external/clusters > cluster.json
+	@echo "export TRAEFIK_HUB_TOKEN=$(shell jq -r '.token' cluster.json)"
+	@echo "export CLUSTER_ID=$(shell jq -r '.id' cluster.json)"
+	@rm -f cluster.json
 
-# Used for Helm Chart
-IMAGE_HELM_UNITTEST=docker.io/helmunittest/helm-unittest:3.13.3-0.4.1
-IMAGE_CHART_TESTING=quay.io/helmpack/chart-testing:v3.10.1
-USERID=$(shell id -u $${USER})
-GROUPID=$(shell id -g $${USER})
-
-charts/traefik-hub/tests/__snapshot__:
-	@mkdir traefik-hub/tests/__snapshot__
-
-test: charts/traefik-hub/tests/__snapshot__
-	docker run ${DOCKER_ARGS} -it --rm -v $(CURDIR):/apps $(IMAGE_HELM_UNITTEST) charts/traefik-hub
-
-lint:
-	docker run ${DOCKER_ARGS} -u $(USERID):$(GROUPID) -it --rm -v $(CURDIR):/hub -w /hub $(IMAGE_CHART_TESTING) ct lint --target-branch main
-
+delete-agent-token:
+	@curl -XDELETE -H "Accept: application/json" -H "Authorization: Bearer ${TRAEFIK_HUB_API_TOKEN}" "https://platform.hub.traefik.io/cluster/external/clusters/${CLUSTER_ID}"
+	@rm -f cluster.json
