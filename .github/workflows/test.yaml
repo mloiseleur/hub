@@ -1,0 +1,79 @@
+---
+name: Test
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  create-agent-token:
+    runs-on: ubuntu-latest
+    # environment: traefik-hub
+    env:
+      TRAEFIK_HUB_API_TOKEN: ${{ secrets.TRAEFIK_HUB_API_TOKEN }}
+    outputs:
+      cluster_id: ${{ steps.get.outputs.cluster_id }}
+      traefik_hub_token: ${{ steps.get.outputs.traefik_hub_token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Create agent token
+        id: get
+        run: |
+          make create-agent-token
+          echo "cluster_id=$(jq -r '.id' cluster.json)" >> "$GITHUB_OUTPUT"
+          echo "traefik_hub_token=$(jq -r '.token' cluster.json)" >> "$GITHUB_OUTPUT"
+
+  test-api-management:
+    runs-on: ubuntu-latest
+    # environment: traefik-hub
+    needs: create-agent-token
+    if: ${{ needs.create-agent-token.outputs.traefik_hub_token != null }}
+    env:
+      TRAEFIK_HUB_TOKEN: ${{ needs.create-agent-token.outputs.traefik_hub_token }}
+      ADMIN_USER_TOKEN: ${{ secrets.ADMIN_USER_TOKEN }}
+      LICENSED_USER_TOKEN: ${{ secrets.LICENSED_USER_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: "**/*.sum"
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.9.0
+        with:
+          install_only: true
+          kubectl_version: "v1.27.3"
+
+      - name: Test API Management tutorials
+        working-directory: api-management
+        run: |
+          make test-access_control
+
+  delete-agent-token:
+    runs-on: ubuntu-latest
+    # environment: traefik-hub
+    if: ${{ always() }}
+    needs: [ create-agent-token, test-api-management ]
+    env:
+      TRAEFIK_HUB_API_TOKEN: ${{ secrets.TRAEFIK_HUB_API_TOKEN }}
+      CLUSTER_ID: $${{ needs.create-agent-token.outputs.cluster_id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get traefik hub token
+        run: |
+          make delete-agent-token
+
