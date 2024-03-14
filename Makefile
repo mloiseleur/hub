@@ -13,10 +13,12 @@ markdown-lint:
 
 create-agent-token:
 	@curl -s -X POST -d '{"name": "test-from-hub-repo", "gatewayEndpoint": ""}' -H "Authorization: Bearer ${TRAEFIK_HUB_API_TOKEN}" https://platform.hub.traefik.io/cluster/external/clusters > cluster.json
-	@echo "export TRAEFIK_HUB_TOKEN=$(shell jq -r '.token' cluster.json)"
-	@echo "export CLUSTER_ID=$(shell jq -r '.id' cluster.json)"
-	@rm -f cluster.json
+	@echo **************
+	@echo "export TRAEFIK_HUB_TOKEN=$$(jq -r '.token' cluster.json)"
+	@echo "export CLUSTER_ID=$$(jq -r '.id' cluster.json)"
+	@echo **************
 
 delete-agent-token:
-	@curl -XDELETE -H "Accept: application/json" -H "Authorization: Bearer ${TRAEFIK_HUB_API_TOKEN}" "https://platform.hub.traefik.io/cluster/external/clusters/${CLUSTER_ID}"
+	@echo "cluster_id: ${CLUSTER_ID}"
+	@curl -s -XDELETE -H "Accept: application/json" -H "Authorization: Bearer ${TRAEFIK_HUB_API_TOKEN}" "https://platform.hub.traefik.io/cluster/external/clusters/${CLUSTER_ID}"
 	@rm -f cluster.json
