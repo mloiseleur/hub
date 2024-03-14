@@ -20,8 +20,12 @@ endif
 	kubectl create namespace traefik-hub
 	@kubectl create secret generic hub-agent-token --namespace traefik-hub --from-literal=token=$(TRAEFIK_HUB_TOKEN)
 	helm repo add --force-update traefik https://traefik.github.io/charts
-	helm install traefik-hub $(TRAEFIK_HUB_ARGS) -n traefik-hub -f tutorials/0-prerequisites/kind/values.yaml --wait traefik/traefik-hub
+	helm install traefik-hub $(TRAEFIK_HUB_ARGS) -n traefik-hub \
+		-f tutorials/0-prerequisites/kind/values.yaml \
+		--wait --timeout 60s traefik/traefik-hub
 	@touch .traefik-hub
+	@echo "sleep 60s for synchronization"
+	@sleep 60
 
 getting-started: .traefik-hub
 	kubectl apply -f src/manifests/public-app.yaml
@@ -38,8 +42,8 @@ test-%: .traefik-hub
 clean-hub:
 	helm uninstall traefik-hub -n traefik-hub
 	kubectl delete namespace traefik-hub
-	rm -f .traefik-hub
+	@rm -f .traefik-hub
 
 clean:
 	kind delete cluster --name traefik-hub
-	rm -f .kube-cluster .traefik-hub
+	@rm -f .kube-cluster .traefik-hub

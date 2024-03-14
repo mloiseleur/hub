@@ -9,7 +9,7 @@ on:
 jobs:
   create-agent-token:
     runs-on: ubuntu-latest
-    environment: traefik-hub
+    # environment: traefik-hub
     env:
       TRAEFIK_HUB_API_TOKEN: ${{ secrets.TRAEFIK_HUB_API_TOKEN }}
     outputs:
@@ -27,8 +27,9 @@ jobs:
 
   test-api-management:
     runs-on: ubuntu-latest
-    environment: traefik-hub
+    # environment: traefik-hub
     needs: create-agent-token
+    if: ${{ needs.create-agent-token.outputs.traefik_hub_token != null }}
     env:
       TRAEFIK_HUB_TOKEN: ${{ needs.create-agent-token.outputs.traefik_hub_token }}
       ADMIN_USER_TOKEN: ${{ secrets.ADMIN_USER_TOKEN }}
@@ -53,25 +54,17 @@ jobs:
       - name: Create kind cluster
         uses: helm/kind-action@v1.9.0
         with:
-          config: api-management/tutorials/0-prerequisites/kind/config.yaml
-
-      - name: Install LB on Kind
-        run: |
-          kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.11/config/manifests/metallb-native.yaml
-          kubectl wait --namespace metallb-system --for=condition=ready pod --selector=app=metallb --timeout=90s
-          kubectl apply -f api-management/tutorials/0-prerequisites/kind/metallb-config.yaml
-          touch api-management/.kube-cluster
+          install_only: true
+          kubectl_version: "v1.27.3"
 
       - name: Test API Management tutorials
         working-directory: api-management
         run: |
-          kubectl version
-          ls -lrht
           make test-access_control
 
   delete-agent-token:
     runs-on: ubuntu-latest
-    environment: traefik-hub
+    # environment: traefik-hub
     if: ${{ always() }}
     needs: [ create-agent-token, test-api-management ]
     env:
